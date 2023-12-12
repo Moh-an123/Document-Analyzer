@@ -12,9 +12,10 @@ const nlp = require('compromise');
 const { rejects } = require('assert');
 const stopwords = require('stopword');
 const url = require("url");
+const { log } = require('console');
+const { connected } = require('process');
 const app = express();
 const port = 3000;
-
 app.use(morgan('dev'));
 let text1, text2;
 let preprocessed1, preprocessed2;
@@ -27,7 +28,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const getRepeatedWords = (words) => {
-    let word = JSON.parse(words);
+    let word = JSON.parse(JSON.stringify(words));
     const filteredWords = word.filter(word => !/^\d+$/.test(word) && (word.length > 2 && word.length < 10));
 
     const wordCounts = filteredWords.reduce((counts, word) => {
@@ -37,7 +38,7 @@ const getRepeatedWords = (words) => {
 
     const sortedWords = Object.keys(wordCounts).sort((a, b) => wordCounts[b] - wordCounts[a]);
     const top10Words = sortedWords.slice(0, 10);
-
+console.log(top10Words);
     return top10Words;
 
 };
@@ -58,24 +59,35 @@ function calculatePlagiarismPercentage(similarities, weights) {
     let ans = ((plagiarismPercentage / 77.78) * 100).toFixed(2);
     return ans;
 }
-function calculateTFIDF(texts) {
-    const tfidf = new natural.TfIdf();
-
-    texts.forEach((text) => {
-        tfidf.addDocument(new natural.WordTokenizer().tokenize(text));
-    });
-
-    const features = texts.map(() => {
-        const tfidfVector = {};
-        tfidf.listTerms(0).forEach((termInfo) => {
-            tfidfVector[termInfo.term] = termInfo.tfidf;
+ function calculateTFIDF(texts) {
+  
+        const tfidf = new natural.TfIdf();
+      
+        // Add documents to the TfIdf instance
+        texts.forEach((text, index) => {
+          tfidf.addDocument(text, `Document ${index + 1}`);
         });
-        return tfidfVector;
-    });
-
-    return features;
+      
+        const tfidfFeatures = [];
+      
+        // Iterate over each document and get TF-IDF features
+        tfidf.listTerms(0 /* document index */).forEach((item) => {
+          tfidfFeatures.push({
+            term: item.term,
+            tfidf: item.tfidf
+          });
+        });
+      
+        return tfidfFeatures;
 }
 function euclideanDistance(vectorA, vectorB) {
+  console.log(Math.sqrt(
+    Object.keys(vectorA).reduce((sum, term) => {
+        const diff = vectorA[term] - (vectorB[term] || 0);
+        return sum + diff ** 2;
+    }, 0)
+));
+
     return Math.sqrt(
         Object.keys(vectorA).reduce((sum, term) => {
             const diff = vectorA[term] - (vectorB[term] || 0);
@@ -84,7 +96,7 @@ function euclideanDistance(vectorA, vectorB) {
     );
 }
 function calculateNgrams(text, n) {
-    const words = text.split(' ');
+    words=text;
     const ngrams = [];
 
     for (let i = 0; i <= words.length - n; i++) {
@@ -105,7 +117,7 @@ function cosineSimilarity(vectorA, vectorB) {
     if (magnitudeA === 0 || magnitudeB === 0) {
         return 0;
     }
-
+console.log(dotProduct / (magnitudeA * magnitudeB));
     return dotProduct / (magnitudeA * magnitudeB);
 }
 function jaccardSimilarity(setA, setB) {
@@ -113,9 +125,17 @@ function jaccardSimilarity(setA, setB) {
     const union = [...new Set([...setA, ...setB])];
     return intersection.length / union.length;
 }
+
+
 async function compareDocuments(text1, text2) {
-    // let sim = text1.filter(word => text2.includes(word));
-    similarWords = sim.length;
+  const set1 = new Set(text1);
+  const set2 = new Set(text2);
+
+  // Find the intersection of the two sets
+  const commonWordsSet = new Set([...set1].filter(word => set2.has(word)));
+  const commonWords = [...commonWordsSet].filter(word => word.length > 2 && word.length < 10);
+  similarWords = commonWords.length;
+   // let sim = text1.filter(word => text2.includes(word));
     const tfidfFeatures = calculateTFIDF([text1, text2]);
     const ngramsFeatures = [
         calculateNgrams(text1, 1),
@@ -141,18 +161,20 @@ async function compareDocuments(text1, text2) {
         ngramsSimilarity,
         euclideanDistanceTFIDF,
     };
-
+  console.log(similarities);
     const weights = {
-        tfidfSimilarity: 0.4,
-        ngramsSimilarity: 0.3,
+        tfidfSimilarity: 0.2,
+        ngramsSimilarity: 0.2,
         euclideanDistanceTFIDF: 0.2,
     };
     plagiarismPercentage = calculatePlagiarismPercentage(similarities, weights);
 
     console.log(`Plagiarism Percentage: ${plagiarismPercentage}%`);
 }
+
+
 async function uploadtext(keywords1, keywords2, plagiarismPercentage, l1, l2, sim) {
-    const filePath = 'nodejs\\public\\index2.html';
+    const filePath = 'public\\index2.html';
     return new Promise(async (resolve, reject) => {
         try {
             console.log('Reading the HTML file...');
@@ -186,9 +208,17 @@ async function preprocessText(text) {
     try {
         processcount++;
         text = text.replace(/\s+/g, ' ').trim();
-        text = text.replace(/[^a-zA-Z0-9\s]/g, '');
-        const words = text.split(/\s+/);
-        const filtered = stopwords.removeStopwords(words);
+        text = text.replace(/[^a-zA-Z0-9\s]/g, '')+' '; 
+       // Input string
+// Split the string based on spaces
+const wordsArray = text.split(' ');
+
+// Filter out empty strings (resulting from consecutive spaces)
+const filteredArray = wordsArray.filter(word => word !== '');
+
+const resultString = filteredArray.join(' ');
+//let words=text.split(" ");
+        const filtered = stopwords.removeStopwords(filteredArray );
         if (processcount == 1) {
             text1 = filtered;
         } else {
@@ -211,12 +241,11 @@ async function extractTextFromPDF(buffer) {
 }
 //docx to text
 async function extractTextFromDOCX(buffer) {
-    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
-    return JSON.stringify(result.text);
+    const result = await mammoth.extractRawText(buffer);
+    return JSON.stringify(result.value);
 }
 //file1 handling
 async function handleFileUpload1(req, res) {
-
     const uploadedFile = req.file;
     if (!uploadedFile) {
         return res.status(400).send('No file uploaded.');
@@ -227,7 +256,7 @@ async function handleFileUpload1(req, res) {
         if (fileType === 'application/pdf') {
             extractedText = await extractTextFromPDF(uploadedFile.buffer);
         } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-            extractedText = await extractTextFromDOCX(uploadedFile.buffer);
+            extractedText = await extractTextFromDOCX(uploadedFile);
         } else if (fileType === 'text/plain') {
             extractedText = uploadedFile.buffer.toString('utf-8');
         } else {
@@ -236,9 +265,9 @@ async function handleFileUpload1(req, res) {
         filecount++;
         preprocessed1 = await preprocessText(extractedText);
         if (filecount == 2) {
-            // keywords1 = getRepeatedWords(text1);
-            // keywords2 = getRepeatedWords(text2);
-            await compareDocuments(preprocessed1, preprocessed2);
+            keywords1 = getRepeatedWords(text1);
+            keywords2 = getRepeatedWords(text2);
+            await compareDocuments(text1, text2);
             uploadtext(keywords1, keywords2, plagiarismPercentage, text1.length, text2.length, similarWords)
         }
         console.log('Mission1 complete');
@@ -259,7 +288,7 @@ async function handleFileUpload2(req, res) {
         if (fileType === 'application/pdf') {
             extractedText = await extractTextFromPDF(uploadedFile.buffer);
         } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-            extractedText = await extractTextFromDOCX(uploadedFile.buffer);
+            extractedText = await extractTextFromDOCX(uploadedFile);
         } else if (fileType === 'text/plain') {
             extractedText = uploadedFile.buffer.toString('utf-8');
         } else {
@@ -268,9 +297,9 @@ async function handleFileUpload2(req, res) {
         filecount++;
         preprocessed2 = await preprocessText(extractedText);
         if (filecount == 2) {
-            // keywords1 = getRepeatedWords(text1);
-            // keywords2 = getRepeatedWords(text2);
-            await compareDocuments(preprocessed1, preprocessed2);
+            keywords1 = getRepeatedWords(text1);
+            keywords2 = getRepeatedWords(text2);
+            await compareDocuments(text1, text2);
             uploadtext(keywords1, keywords2, plagiarismPercentage, text1.length, text2.length, similarWords)
         }
         console.log('Mission2 complete');
