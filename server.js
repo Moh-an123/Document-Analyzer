@@ -96,7 +96,7 @@ function euclideanDistance(vectorA, vectorB) {
     );
 }
 function calculateNgrams(text, n) {
-    words=text;
+  const words=text;
     const ngrams = [];
 
     for (let i = 0; i <= words.length - n; i++) {
