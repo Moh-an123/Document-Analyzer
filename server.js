@@ -80,21 +80,32 @@ function calculatePlagiarismPercentage(similarities, weights) {
       
         return tfidfFeatures;
 }
-function euclideanDistance(vectorA, vectorB) {
-  console.log(Math.sqrt(
-    Object.keys(vectorA).reduce((sum, term) => {
-        const diff = vectorA[term] - (vectorB[term] || 0);
-        return sum + diff ** 2;
-    }, 0)
-));
+// function euclideanDistance(vectorA, vectorB) {
+//   console.log(Math.sqrt(
+//     Object.keys(vectorA).reduce((sum, term) => {
+//         const diff = vectorA[term] - (vectorB[term] || 0);
+//         return sum + diff ** 2;
+//     }, 0)
+// ));
 
-    return Math.sqrt(
-        Object.keys(vectorA).reduce((sum, term) => {
-            const diff = vectorA[term] - (vectorB[term] || 0);
-            return sum + diff ** 2;
-        }, 0)
-    );
-}
+//     return Math.sqrt(
+//         Object.keys(vectorA).reduce((sum, term) => {
+//             const diff = vectorA[term] - (vectorB[term] || 0);
+//             return sum + diff ** 2;
+//         }, 0)
+//     );
+// }
+function euclideanDistance(point1, point2) {
+    // Ensure both points have tfidf values
+    if (point1.tfidf === undefined || point2.tfidf === undefined) {
+      throw new Error('Points must have tfidf values');
+    }
+  
+    // Calculate the Euclidean distance
+    const distance = Math.abs(point1.tfidf - point2.tfidf);
+  
+    return distance;
+  }
 function calculateNgrams(text, n) {
   const words=text;
     const ngrams = [];
@@ -106,19 +117,33 @@ function calculateNgrams(text, n) {
 
     return ngrams;
 }
-function cosineSimilarity(vectorA, vectorB) {
-    const dotProduct = Object.keys(vectorA).reduce((sum, term) => {
-        return sum + (vectorA[term] || 0) * (vectorB[term] || 0);
-    }, 0);
+// function cosineSimilarity(vectorA, vectorB) {
+ 
+//     const dotProduct = Object.keys(vectorA).reduce((sum, term) => {
+//         return sum + (vectorA[term] || 0) * (vectorB[term] || 0);
+//     }, 0);
 
-    const magnitudeA = Math.sqrt(Object.values(vectorA).reduce((sum, tfidf) => sum + Math.pow(tfidf || 0, 2), 0));
-    const magnitudeB = Math.sqrt(Object.values(vectorB).reduce((sum, tfidf) => sum + Math.pow(tfidf || 0, 2), 0));
+//     const magnitudeA = Math.sqrt(Object.values(vectorA).reduce((sum, tfidf) => sum + Math.pow(tfidf || 0, 2), 0));
+//     const magnitudeB = Math.sqrt(Object.values(vectorB).reduce((sum, tfidf) => sum + Math.pow(tfidf || 0, 2), 0));
 
-    if (magnitudeA === 0 || magnitudeB === 0) {
-        return 0;
-    }
-console.log(dotProduct / (magnitudeA * magnitudeB));
-    return dotProduct / (magnitudeA * magnitudeB);
+//     if (magnitudeA === 0 || magnitudeB === 0) {
+//         return 0;
+//     }
+// console.log(dotProduct / (magnitudeA * magnitudeB));
+//     return dotProduct / (magnitudeA * magnitudeB);
+// }f 
+function cosineSimilarity(term1, term2) {
+  // Calculate dot product
+  let dotProduct = term1.tfidf * term2.tfidf;
+
+  // Calculate magnitudes
+  let magnitude1 = Math.sqrt(term1.tfidf ** 2);
+  let magnitude2 = Math.sqrt(term2.tfidf ** 2);
+
+  // Calculate cosine similarity
+  let similarity = dotProduct / (magnitude1 * magnitude2);
+
+  return similarity;
 }
 function jaccardSimilarity(setA, setB) {
     const intersection = setA.filter(value => setB.includes(value));
@@ -136,25 +161,30 @@ async function compareDocuments(text1, text2) {
   const commonWords = [...commonWordsSet].filter(word => word.length > 2 && word.length < 10);
   similarWords = commonWords.length;
    // let sim = text1.filter(word => text2.includes(word));
+  
     const tfidfFeatures = calculateTFIDF([text1, text2]);
+    // console.log(tfidfFeatures);
     const ngramsFeatures = [
         calculateNgrams(text1, 1),
         calculateNgrams(text2, 1),
     ];
-
+    console.log(tfidfFeatures[0]);
     const features1 = {
+     
         tfidf: tfidfFeatures[0],
         ngrams: ngramsFeatures[0],
     };
-
+    console.log(tfidfFeatures[1]);
     const features2 = {
         tfidf: tfidfFeatures[1],
         ngrams: ngramsFeatures[1],
     };
-
+// console.log(`features1.tfidf, features2.tfidf${features1.tfidf},${ features2.tfidf}`);
     const tfidfSimilarity = cosineSimilarity(features1.tfidf, features2.tfidf);
+    // console.log(`features1.ngrams, features2.ngrams${features1.ngrams},${ features2.ngrams}`);
     const ngramsSimilarity = jaccardSimilarity(features1.ngrams, features2.ngrams);
-    const euclideanDistanceTFIDF = euclideanDistance(features1.tfidf, features2.tfidf);
+    // console.log(`features1.tfidf, features2.tfidf${features1.tfidf},${ features2.tfidf}`);
+    const euclideanDistanceTFIDF = euclideanDistance(features1.tfidf, features2.tfidf)/100.0;
 
     let similarities = {
         tfidfSimilarity,
@@ -187,14 +217,14 @@ async function uploadtext(keywords1, keywords2, plagiarismPercentage, l1, l2, si
             const palagrism = $('#palagrism');
             const len1 = $('#wordcount1');
             const len2 = $('#wordcount2');
-            const similar = $('wordcnt')
+            const similar = $('#wordcnt');
 
-            key1.html(`<h3>Keywords :${keywords1}</h3>`)
-            key2.html(`<h3>Keywords :${keywords2}</h3>`)
+            key1.html(`Keywords : ${keywords1}`)
+            key2.html(`Keywords : ${keywords2}`)
             palagrism.html(`<h2> ${plagiarismPercentage}% <br /> palagrism </h2>`)
             len1.html(` <h3>Word Count : ${l1}words</h3>`)
             len2.html(` <h3>Word Count : ${l2}words</h3>`)
-            similar.html(`<h3>Similar Words <br>${sim}words</h3>`)
+            similar.html(`<h3>Similar Words <br>${sim}</h3>`)
             await fs.writeFile(filePath, $.html(), 'utf8');
             resolve();
             console.log('HTML file has been successfully modified.');

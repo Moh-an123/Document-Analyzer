@@ -23,17 +23,18 @@ header {
   width: 100%;
   margin-top: 20px;
   display: flex;
-  flex-wrap: wrap;
+  
   
 }
 .box1,
 .box2 {
+  width: 35%;
   padding-block: 50px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  flex-basis: 40%;
+  
   border: 2px solid black;
   height: 80vh;
   margin-bottom: 5vh;
@@ -59,7 +60,7 @@ header {
   background-color: rgb(98, 98, 162);
 }
 .center {
-  flex-basis: 17%;
+ width: 25%;
   margin-inline: auto;
   border:2px solid rgb(0, 0, 0);
   height: 80vh;
@@ -87,16 +88,18 @@ header {
 
 .keywords{
   
-    width: 95%;
-    margin-inline: auto;
+    width: 92%;
     margin-top:30px ;
     padding: 10px 10px;
-    height: max-content;
     border: 2px solid rgba(42, 42, 45, 0.79);
     border-radius: 10px;
     background-color: rgba(0, 0, 0, 0.482) ;
- color: #fff;
+    /* overflow-x:scroll; */
+    overflow-wrap: break-word;
+    color: #fff;
   }
+  
+  
 #palagrism{
     bottom: 0;
     width: 95%;
