@@ -10,7 +10,8 @@ body {
 }
 
 header {
-  background-color: #010101;
+  background-color: #184bb0;
+  box-shadow: 10px 10px 20px rgb(255, 255, 255 , 1);
   color: white;
   padding: 7px;
   text-align: center;
@@ -79,28 +80,35 @@ i {
   color: #1683ff;
   cursor: pointer;
 }
-
 .drag-area1.active,
 .drag-area2.active {
   border: 2px solid #1683ff;
 }
-
 button {
-  width: 130px;
-  height: 35px;
   background-color: #1683ff;
+  border-radius: 100px;
+  box-shadow: rgba(44, 187, 99, .2) 0 -25px 18px -14px inset, rgba(44, 187, 99, .15) 0 1px 2px, rgba(44, 187, 99, .15) 0 2px 4px, rgba(44, 187, 99, .15) 0 4px 8px, rgba(44, 187, 99, .15) 0 8px 16px, rgba(44, 187, 99, .15) 0 16px 32px;
+  color: white;
+  cursor: pointer;
+  display: inline-block;
+  padding: 5px 15px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 250ms;
+  border: 0;
+  font-size: 18px;
   justify-content: center;
-  color: #fff;
-  font-size: 20px;
-  border-radius: 17px;
-  margin-top: 20px;
-  border: none;
   display: block;
   margin: 0 auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action:manipulation;
 }
 
 button:hover {
-  background-color: rgb(17, 107, 210);
+  box-shadow: rgba(51, 69, 232, 0.35) 0 -25px 18px -14px inset, rgba(52, 127, 232, 0.25) 0 1px 2px, rgba(44, 187, 99, .25) 0 2px 4px, rgba(44, 187, 99, .25) 0 4px 8px, rgba(44, 187, 99, .25) 0 8px 16px, rgba(44, 187, 99, .25) 0 16px 32px;
+  transform: scale(1.02);
+  background-color: #1374e2;
 }
 
 footer {
@@ -108,6 +116,8 @@ footer {
   position: absolute;
   bottom: 0;
   background-color: #010101;
+  background-color: #184bb0;
+  box-shadow: 10px 10px 20px rgb(255, 255, 255 , 1);
   padding: 7px;
   color: antiquewhite;
   text-align: center;

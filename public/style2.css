@@ -11,13 +11,14 @@ body {
   color: black;
 }
 header {
-  background-color: #010101;
+  background-color:  #184bb0;
   color: white;
   padding: 7px;
   text-align: center;
+  box-shadow: 10px 10px 20px rgb(255, 255, 255 , 1);
 }
 .box{
-  background-image: linear-gradient(90deg,#953c97 ,rgb(30, 157, 255) );   /*change bg color here */
+  background-image: linear-gradient(180deg,#bfe6f1 ,rgb(30, 157, 255) );   
 }
 .container {
   width: 100%;
@@ -76,12 +77,13 @@ header {
   align-items: center;
 }
 #wordcnt {
- margin-top: 50px;
+  margin-top: 50px;
   height: 70px;
   width: max-content;
   padding: 8px;
   text-align: center;
-  border: 2px double rgb(14, 11, 11);
+  background-color: #acc1ec;
+  border: 2px double rgb(17, 52, 96);
   border-radius: 10px;
 }
 
@@ -114,16 +116,6 @@ header {
   font-size: 28px;
   font-weight: 600;
 }
-footer {
-  width: 100vw;
-  position: absolute;
-  bottom: 0;
-  background-color: #010101;
-  padding: 7px;
-  color: rgb(0, 0, 0);
-  text-align: center;
-}
-
 
 .a{
   display: flex;
@@ -143,4 +135,14 @@ footer {
   padding-block: 30% ;
   background-color: rgb(34, 61, 61);
   border-radius: 50%;
+}
+footer {
+  width: 100vw;
+  box-shadow: 0 -5px 30px rgb(255, 255, 255 , 1);
+  position: absolute;
+  bottom: 0;
+  background-color:  #184bb0;
+  padding: 7px;
+  color: antiquewhite;
+  text-align: center;
 }

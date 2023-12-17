@@ -108,9 +108,7 @@ async function uploadFiles() {
 }
 document.querySelector('button').onclick = () => {
     uploadFiles().then(() => {
-        setTimeout(function () {
-            window.location.href = "load.html";
-        }, 10000);
+        window.location.href = 'load.html'
     })
         .catch((error) => alert(error));
 };
