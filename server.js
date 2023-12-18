@@ -26,7 +26,7 @@ let similarWords = 0;
 app.use(express.static(path.join(__dirname, 'public')));
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-
+let tfidfSimilarity,ngramsSimilarity ;
 const getRepeatedWords = (words) => {
     let word = JSON.parse(JSON.stringify(words));
     const filteredWords = word.filter(word => !/^\d+$/.test(word) && (word.length > 2 && word.length < 10));
@@ -38,8 +38,11 @@ const getRepeatedWords = (words) => {
 
     const sortedWords = Object.keys(wordCounts).sort((a, b) => wordCounts[b] - wordCounts[a]);
     const top10Words = sortedWords.slice(0, 10);
+    console.log(typeof top10Words);
+
+let keys=top10Words.join(', ')
     console.log(top10Words);
-    return top10Words;
+    return keys;
 
 };
 
@@ -70,7 +73,7 @@ function calculateTFIDF(texts) {
     const tfidfFeatures = [];
 
     // Iterate over each document and get TF-IDF features
-    tfidf.listTerms(0 /* document index */).forEach((item) => {
+    tfidf.listTerms(0).forEach((item) => {
         tfidfFeatures.push({
             term: item.term,
             tfidf: item.tfidf
@@ -79,21 +82,6 @@ function calculateTFIDF(texts) {
 
     return tfidfFeatures;
 }
-// function euclideanDistance(vectorA, vectorB) {
-//   console.log(Math.sqrt(
-//     Object.keys(vectorA).reduce((sum, term) => {
-//         const diff = vectorA[term] - (vectorB[term] || 0);
-//         return sum + diff ** 2;
-//     }, 0)
-// ));
-
-//     return Math.sqrt(
-//         Object.keys(vectorA).reduce((sum, term) => {
-//             const diff = vectorA[term] - (vectorB[term] || 0);
-//             return sum + diff ** 2;
-//         }, 0)
-//     );
-// }
 function euclideanDistance(point1, point2) {
     // Ensure both points have tfidf values
     if (point1.tfidf === undefined || point2.tfidf === undefined) {
@@ -158,17 +146,15 @@ async function compareDocuments(text1, text2) {
 
         tfidf: tfidfFeatures[0],
         ngrams: ngramsFeatures[0],
-    };
+    };   console.log("2: ");
     console.log(tfidfFeatures[1]);
     const features2 = {
         tfidf: tfidfFeatures[1],
         ngrams: ngramsFeatures[1],
     };
-    // console.log(`features1.tfidf, features2.tfidf${features1.tfidf},${ features2.tfidf}`);
-    const tfidfSimilarity = cosineSimilarity(features1.tfidf, features2.tfidf);
-    // console.log(`features1.ngrams, features2.ngrams${features1.ngrams},${ features2.ngrams}`);
-    const ngramsSimilarity = jaccardSimilarity(features1.ngrams, features2.ngrams);
-    // console.log(`features1.tfidf, features2.tfidf${features1.tfidf},${ features2.tfidf}`);
+   
+    tfidfSimilarity = cosineSimilarity(features1.tfidf, features2.tfidf);
+    ngramsSimilarity = jaccardSimilarity(features1.ngrams, features2.ngrams);
     const euclideanDistanceTFIDF = euclideanDistance(features1.tfidf, features2.tfidf) / 100.0;
 
     let similarities = {
@@ -190,7 +176,8 @@ async function compareDocuments(text1, text2) {
 
 
 async function uploadtext(keywords1, keywords2, plagiarismPercentage, l1, l2, sim) {
-    const filePath = 'Document_analyzer\\Document-Analyzer\\public\\index2.html';
+    const filePath = 'public\\index2.html';
+    const filePath1 = 'public\\index2.js';
     return new Promise(async (resolve, reject) => {
         try {
             console.log('Reading the HTML file...');
@@ -204,7 +191,6 @@ async function uploadtext(keywords1, keywords2, plagiarismPercentage, l1, l2, si
             const len1 = $('#wordcount1');
             const len2 = $('#wordcount2');
             const similar = $('#wordcnt');
-
             key1.html(`Keywords : ${keywords1}`)
             key2.html(`Keywords : ${keywords2}`)
             palagrism.html(`<h2> ${plagiarismPercentage}% <br /> palagrism </h2>`)
@@ -212,6 +198,29 @@ async function uploadtext(keywords1, keywords2, plagiarismPercentage, l1, l2, si
             len2.html(` <h3>Word Count : ${l2}words</h3>`)
             similar.html(`<h3>Similar Words <br>${sim}</h3>`)
             await fs.writeFile(filePath, $.html(), 'utf8');
+            await fs.writeFile(filePath1, `const a=${tfidfSimilarity}*100,b=${plagiarismPercentage},c=${ngramsSimilarity}*100;
+            let cp=document.getElementById('a'),pv=document.getElementById('b');
+            let cp1=document.getElementById('a1'),pv1=document.getElementById('b1');
+            let cp2=document.getElementById('a2'),pv2=document.getElementById('b2');
+            let psv=0,pev=100,speed=50;
+            let progress=setInterval(()=>{
+                psv++;
+                if(psv<=a){
+                pv.textContent=psv+"%";
+                cp.style.background="conic-gradient(#0766ad "+ psv*3.6+"deg,#e0f4ff 0deg)";
+                }
+                if(psv<=b){
+                pv1.textContent=psv+"%";
+                cp1.style.background="conic-gradient(#0766ad  "+psv*3.6+"deg,#e0f4ff 0deg)";
+                }
+                if(psv<=c){
+                pv2.textContent=psv+"%";
+                cp2.style.background="conic-gradient(#0766ad "+psv*3.6+"deg,#e0f4ff 0deg)";
+                }
+                if(psv==pev){
+                    clearInterval(progress);
+                }
+            },speed);`, 'utf8');
             resolve();
             console.log('HTML file has been successfully modified.');
         } catch (err) {
@@ -225,15 +234,12 @@ async function preprocessText(text) {
         processcount++;
         text = text.replace(/\s+/g, ' ').trim();
         text = text.replace(/[^a-zA-Z0-9\s]/g, '') + ' ';
-        // Input string
-        // Split the string based on spaces
+     
         const wordsArray = text.split(' ');
 
-        // Filter out empty strings (resulting from consecutive spaces)
+ 
         const filteredArray = wordsArray.filter(word => word !== '');
 
-        // const resultString = filteredArray.join(' ');
-        //let words=text.split(" ");
         const filtered = stopwords.removeStopwords(filteredArray);
         if (processcount == 1) {
             text1 = filtered;

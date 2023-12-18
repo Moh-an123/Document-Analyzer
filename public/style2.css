@@ -29,6 +29,8 @@ header {
 }
 .box1,
 .box2 {
+  width: 31%;
+  min-width: 15%;
   padding-block: 50px;
   display: flex;
   flex-direction: column;
@@ -60,6 +62,7 @@ header {
   background-color: rgb(98, 98, 162);
 }
 .center {
+  width: 25%;
   flex-basis: 17%;
   margin-inline: auto;
   border:2px solid rgb(0, 0, 0);
@@ -98,6 +101,7 @@ header {
     border-radius: 10px;
     background-color: rgba(0, 0, 0, 0.482) ;
  color: #fff;
+ overflow-wrap: break-word;
   }
 #palagrism{
     bottom: 0;
@@ -129,11 +133,11 @@ header {
 }
 .b{
   text-align: center;
- 
+ color: wheat;
   width: 120px;
   height: 120px;
   padding-block: 30% ;
-  background-color: rgb(34, 61, 61);
+  background-color: #2b2b71;
   border-radius: 50%;
 }
 footer {
