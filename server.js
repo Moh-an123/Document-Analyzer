@@ -38,11 +38,8 @@ const getRepeatedWords = (words) => {
 
     const sortedWords = Object.keys(wordCounts).sort((a, b) => wordCounts[b] - wordCounts[a]);
     const top10Words = sortedWords.slice(0, 10);
-    console.log(typeof top10Words);
 
-let keys=top10Words.join(', ')
-    console.log(top10Words);
-    return keys;
+    return top10Words;
 
 };
 
@@ -62,39 +59,32 @@ function calculatePlagiarismPercentage(similarities, weights) {
     return plagiarismPercentage;
 }
 function calculateTFIDF(texts) {
-
     const tfidf = new natural.TfIdf();
 
-    // Add documents to the TfIdf instance
-    texts.forEach((text, index) => {
-        tfidf.addDocument(text, `Document ${index + 1}`);
+    texts.forEach((text) => {
+        tfidf.addDocument(new natural.WordTokenizer().tokenize(text));
     });
 
-    const tfidfFeatures = [];
-
-    // Iterate over each document and get TF-IDF features
-    tfidf.listTerms(0).forEach((item) => {
-        tfidfFeatures.push({
-            term: item.term,
-            tfidf: item.tfidf
+    const features = texts.map(() => {
+        const tfidfVector = {};
+        tfidf.listTerms(0).forEach((termInfo) => {
+            tfidfVector[termInfo.term] = termInfo.tfidf;
         });
+        return tfidfVector;
     });
 
-    return tfidfFeatures;
+    return features;
 }
-function euclideanDistance(point1, point2) {
-    // Ensure both points have tfidf values
-    if (point1.tfidf === undefined || point2.tfidf === undefined) {
-        throw new Error('Points must have tfidf values');
-    }
-
-    // Calculate the Euclidean distance
-    const distance = Math.abs(point1.tfidf - point2.tfidf);
-
-    return distance;
+function euclideanDistance(vectorA, vectorB) {
+    return Math.sqrt(
+        Object.keys(vectorA).reduce((sum, term) => {
+            const diff = vectorA[term] - (vectorB[term] || 0);
+            return sum + diff ** 2;
+        }, 0)
+    );
 }
 function calculateNgrams(text, n) {
-    const words = text;
+    const words = text.split(' ');
     const ngrams = [];
 
     for (let i = 0; i <= words.length - n; i++) {
@@ -104,19 +94,19 @@ function calculateNgrams(text, n) {
 
     return ngrams;
 }
+function cosineSimilarity(vectorA, vectorB) {
+    const dotProduct = Object.keys(vectorA).reduce((sum, term) => {
+        return sum + (vectorA[term] || 0) * (vectorB[term] || 0);
+    }, 0);
 
-function cosineSimilarity(term1, term2) {
-    // Calculate dot product
-    let dotProduct = term1.tfidf * term2.tfidf;
+    const magnitudeA = Math.sqrt(Object.values(vectorA).reduce((sum, tfidf) => sum + Math.pow(tfidf || 0, 2), 0));
+    const magnitudeB = Math.sqrt(Object.values(vectorB).reduce((sum, tfidf) => sum + Math.pow(tfidf || 0, 2), 0));
 
-    // Calculate magnitudes
-    let magnitude1 = Math.sqrt(term1.tfidf ** 2);
-    let magnitude2 = Math.sqrt(term2.tfidf ** 2);
+    if (magnitudeA === 0 || magnitudeB === 0) {
+        return 0;
+    }
 
-    // Calculate cosine similarity
-    let similarity = dotProduct / (magnitude1 * magnitude2);
-
-    return similarity;
+    return dotProduct / (magnitudeA * magnitudeB);
 }
 function jaccardSimilarity(setA, setB) {
     const intersection = setA.filter(value => setB.includes(value));
@@ -126,15 +116,8 @@ function jaccardSimilarity(setA, setB) {
 
 
 async function compareDocuments(text1, text2) {
-    const set1 = new Set(text1);
-    const set2 = new Set(text2);
-
-    // Find the intersection of the two sets
-    const commonWordsSet = new Set([...set1].filter(word => set2.has(word)));
-    const commonWords = [...commonWordsSet].filter(word => word.length > 2 && word.length < 10);
-    similarWords = commonWords.length;
     // let sim = text1.filter(word => text2.includes(word));
-
+    similarWords = sim.length;
     const tfidfFeatures = calculateTFIDF([text1, text2]);
     // console.log(tfidfFeatures);
     const ngramsFeatures = [
@@ -143,30 +126,29 @@ async function compareDocuments(text1, text2) {
     ];
     console.log(tfidfFeatures[0]);
     const features1 = {
-
         tfidf: tfidfFeatures[0],
         ngrams: ngramsFeatures[0],
-    };   console.log("2: ");
-    console.log(tfidfFeatures[1]);
+    };
+
     const features2 = {
         tfidf: tfidfFeatures[1],
         ngrams: ngramsFeatures[1],
     };
-   
-    tfidfSimilarity = cosineSimilarity(features1.tfidf, features2.tfidf);
-    ngramsSimilarity = jaccardSimilarity(features1.ngrams, features2.ngrams);
-    const euclideanDistanceTFIDF = euclideanDistance(features1.tfidf, features2.tfidf) / 100.0;
+
+    const tfidfSimilarity = cosineSimilarity(features1.tfidf, features2.tfidf);
+    const ngramsSimilarity = jaccardSimilarity(features1.ngrams, features2.ngrams);
+    const euclideanDistanceTFIDF = euclideanDistance(features1.tfidf, features2.tfidf);
 
     let similarities = {
         tfidfSimilarity,
         ngramsSimilarity,
         euclideanDistanceTFIDF,
     };
-    console.log(similarities);
+
     const weights = {
-        tfidfSimilarity: 0.3,
+        tfidfSimilarity: 0.4,
         ngramsSimilarity: 0.3,
-        euclideanDistanceTFIDF: 0.4,
+        euclideanDistanceTFIDF: 0.2,
     };
 
     plagiarismPercentage = calculatePlagiarismPercentage(similarities, weights);
@@ -176,8 +158,7 @@ async function compareDocuments(text1, text2) {
 
 
 async function uploadtext(keywords1, keywords2, plagiarismPercentage, l1, l2, sim) {
-    const filePath = 'public\\index2.html';
-    const filePath1 = 'public\\index2.js';
+    const filePath = 'nodejs\\public\\index2.html';
     return new Promise(async (resolve, reject) => {
         try {
             console.log('Reading the HTML file...');
@@ -190,9 +171,10 @@ async function uploadtext(keywords1, keywords2, plagiarismPercentage, l1, l2, si
             const palagrism = $('#palagrism');
             const len1 = $('#wordcount1');
             const len2 = $('#wordcount2');
-            const similar = $('#wordcnt');
-            key1.html(`Keywords : ${keywords1}`)
-            key2.html(`Keywords : ${keywords2}`)
+            const similar = $('wordcnt')
+
+            key1.html(`<h3>Keywords :${keywords1}</h3>`)
+            key2.html(`<h3>Keywords :${keywords2}</h3>`)
             palagrism.html(`<h2> ${plagiarismPercentage}% <br /> palagrism </h2>`)
             len1.html(` <h3>Word Count : ${l1}words</h3>`)
             len2.html(` <h3>Word Count : ${l2}words</h3>`)
@@ -233,14 +215,9 @@ async function preprocessText(text) {
     try {
         processcount++;
         text = text.replace(/\s+/g, ' ').trim();
-        text = text.replace(/[^a-zA-Z0-9\s]/g, '') + ' ';
-     
-        const wordsArray = text.split(' ');
-
- 
-        const filteredArray = wordsArray.filter(word => word !== '');
-
-        const filtered = stopwords.removeStopwords(filteredArray);
+        text = text.replace(/[^a-zA-Z0-9\s]/g, '');
+        const words = text.split(/\s+/);
+        const filtered = stopwords.removeStopwords(words);
         if (processcount == 1) {
             text1 = filtered;
         } else {
